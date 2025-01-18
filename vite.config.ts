@@ -7,7 +7,13 @@ export default defineConfig({
   server: {
     port: 8888,
   },
+  base: './',
   build: {
+    minify: false,
+    terserOptions: {
+      compress: false,
+      mangle: false,
+    },
     sourcemap: true
   },
   plugins: [
