@@ -248,33 +248,78 @@ class MapMaplibreGlInternal extends React.Component<MapMaplibreGlInternalProps, 
     this.props.onLayerSelect(index);
   }
 
+  buildGeocodeResult = (provider: string, feature: json) => {
+    let point;
+    if (provider == "nominatim") {
+      const center = [
+        feature.bbox[0] +
+            (feature.bbox[2] - feature.bbox[0]) / 2,
+        feature.bbox[1] +
+            (feature.bbox[3] - feature.bbox[1]) / 2
+      ];
+      point = {
+        type: 'Feature',
+        geometry: {
+          type: 'Point',
+          coordinates: center
+        },
+        place_name: feature.properties.display_name,
+        properties: feature.properties,
+        text: feature.properties.display_name,
+        place_type: ['place'],
+        center
+      };
+    }
+    else if (provider == "esri") {
+      const center = [feature.location.x, feature.location.y];
+      point = {
+        type: 'Feature',
+        geometry: {
+          type: 'Point',
+          coordinates: center
+        },
+        place_name: `${feature.address} [${feature.attributes.Country}]`,
+        properties: feature.attributes,
+        text: feature.address,
+        place_type: ['place'],
+        center
+      };
+    }
+
+    return point;
+  }
+
   initGeocoder(map: Map) {
+    const qs = new URL(window.location.href).searchParams;
+    const provider = qs.get("provider") || "nominatim";
+
+    const providers = {
+      "nominatim": {
+        resultsKey: 'features',
+        url: (q) => `https://nominatim.openstreetmap.org/search?q=${q}&format=geojson&polygon_geojson=1&addressdetails=1`
+      },
+      "esri": {
+        resultsKey: 'candidates',
+        url: (q) => `https://geocode.arcgis.com/arcgis/rest/services/World/GeocodeServer/findAddressCandidates?f=json&maxLocations=10&outFields=*&SingleLine=${q}`
+      }
+    }
+
     const geocoderConfig = {
       forwardGeocode: async (config: MaplibreGeocoderApiConfig) => {
         const features = [];
         try {
-          const request = `https://nominatim.openstreetmap.org/search?q=${config.query}&format=geojson&polygon_geojson=1&addressdetails=1`;
+          console.log("provider", provider);
+          const request = providers[provider]['url'](config.query);
+          console.log("request", request);
           const response = await fetch(request);
           const geojson = await response.json();
-          for (const feature of geojson.features) {
-            const center = [
-              feature.bbox[0] +
-                  (feature.bbox[2] - feature.bbox[0]) / 2,
-              feature.bbox[1] +
-                  (feature.bbox[3] - feature.bbox[1]) / 2
-            ];
-            const point = {
-              type: 'Feature',
-              geometry: {
-                type: 'Point',
-                coordinates: center
-              },
-              place_name: feature.properties.display_name,
-              properties: feature.properties,
-              text: feature.properties.display_name,
-              place_type: ['place'],
-              center
-            };
+
+          console.log("geojson", geojson);
+          let resultsKey = providers[provider]['resultsKey'];
+          //var resultsKey = !Object.hasOwn(geojson,"features") ? "candidates" : "features";
+          //for (const feature of geojson.features) {
+          for (const feature of geojson[resultsKey]) {
+            const point = this.buildGeocodeResult(provider, feature);
             features.push(point);
           }
         } catch (e) {
