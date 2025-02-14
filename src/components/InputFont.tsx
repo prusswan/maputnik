@@ -40,13 +40,18 @@ export default class FieldFont extends React.Component<FieldFontProps> {
 
   render() {
     const inputs = this.values.map((value, i) => {
+      let fonts = this.props.fonts;
+      if (fonts && "error" in fonts) {
+        fonts = ["Noto Sans Regular"];
+      }
+
       return <li
         key={i}
       >
         <InputAutocomplete
           aria-label={this.props['aria-label'] || this.props.name}
           value={value}
-          options={this.props.fonts?.map(f => [f, f])}
+          options={fonts?.map(f => [f, f])}
           onChange={this.changeFont.bind(this, i)}
         />
       </li>
