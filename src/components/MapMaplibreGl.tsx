@@ -270,6 +270,21 @@ class MapMaplibreGlInternal extends React.Component<MapMaplibreGlInternalProps, 
         center
       };
     }
+    else if (provider == "mapbox") {
+      const center = feature.geometry.coordinates;
+      point = {
+        type: 'Feature',
+        geometry: {
+          type: 'Point',
+          coordinates: center
+        },
+        place_name: feature.properties.full_address,
+        properties: feature.properties,
+        text: feature.properties.place_formatted,
+        place_type: ['place'],
+        center
+      };
+    }
     else if (provider == "esri") {
       const center = [feature.location.x, feature.location.y];
       point = {
@@ -293,6 +308,8 @@ class MapMaplibreGlInternal extends React.Component<MapMaplibreGlInternalProps, 
     const qs = new URL(window.location.href).searchParams;
     const provider = qs.get("provider") || "nominatim";
 
+    const mbToken = "pk.eyJ1Ijoib3BlbnN0cmVldG1hcCIsImEiOiJjbGZkenFib3IyazZlNDRwYzd5eWg5Mjl2In0.Gha0ZtI4GZy36s8h8ClbaQ";
+
     const providers = {
       "nominatim": {
         resultsKey: 'features',
@@ -301,6 +318,10 @@ class MapMaplibreGlInternal extends React.Component<MapMaplibreGlInternalProps, 
       "esri": {
         resultsKey: 'candidates',
         url: (q) => `https://geocode.arcgis.com/arcgis/rest/services/World/GeocodeServer/findAddressCandidates?f=json&maxLocations=10&outFields=*&SingleLine=${q}`
+      },
+      "mapbox": {
+        resultsKey: 'features',
+        url: (q) => `https://api.mapbox.com/search/geocode/v6/forward?q=${q}&limit=10&access_token=${mbToken}`
       }
     }
 
@@ -333,6 +354,8 @@ class MapMaplibreGlInternal extends React.Component<MapMaplibreGlInternalProps, 
     const geocoder = new MaplibreGeocoder(geocoderConfig, {
       placeholder: this.props.t("Search"),
       maplibregl: MapLibreGl,
+      minLength: 0,
+      limit: 10,
     });
     map.addControl(geocoder, 'top-left');
     return geocoder;
