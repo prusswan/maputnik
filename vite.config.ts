@@ -26,12 +26,14 @@ export default defineConfig({
       },
     }) as any,
     react(),
+    /*
     istanbul({
       cypress: true,
       requireEnv: false,
       nycrcPath: "./.nycrc.json",
       forceBuildInstrument: true, //Instrument the source code for cypress runs
     }),
+    */
   ],
   define: {
     global: "window",
